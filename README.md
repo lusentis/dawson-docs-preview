@@ -88,7 +88,7 @@ dawson deploys functions to the cloud and optionally makes them available via HT
 - https://aws.amazon.com/lambda/serverless-architectures-learn-more/ (PDF)
 - https://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html and https://aws.amazon.com/api-gateway/details/ (suggested readings)
 
-Usually, a function, in dawson's terms, is an handler for an HTTP request, which takes incoming parameters (such as HTTP Body, Querystring parameters, etc) and returns an output to be displayed in a browser.
+Usually, a function, in dawson's terms, is an handler for an HTTP request *(much like routes in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.
 
 You should place all of your functions in a file named `api.js` (or you might define them elsewhere and just `export`). The `api.js` file will be parsed and automatically transpiled using `babel` so you can use any JavaScript language features that's supported by `babel-preset-env`, including ES6 Modules, ES7 `Array.prototype.includes` etc.
 
@@ -211,8 +211,8 @@ Instead of
 ~~```throw new Error('I wanted to throw a 403 error')```~~ you should write:
 ```js
 throw new Error(JSON.stringify({
-  httpStatus: 403,
-  response: 'I am throwing a 403 error'
+  httpStatus: 403, // int
+  response: 'I am throwing a 403 error' // string
 }));
 // Note that the Error constructor accepts just a String as first argument,
 // so you need to use JSON.stringify.
