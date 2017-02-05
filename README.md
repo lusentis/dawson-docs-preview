@@ -6,7 +6,7 @@ dawson is a [serverless](https://auth0.com/blog/what-is-serverless/) web framewo
 
 ### Is dawson for me?
 👍🏽 I'm building a️ single-page app/website with a backend  
-👍🏽 I'm building an API-based service  
+👍🏽 I'm building an API
 👍🏽 I'm building a server-rendered app/website  
 
 The main goal of dawson is to be a zero-configuration yet fully extensible *[backend]* web framework for building web apps on AWS. You should be able to start using dawson without creating any configuration file and with only a basic knowledge of Amazon Web Services.
@@ -24,6 +24,8 @@ greet.api = {
 }
 ```
 ```bash
+$ # 🛑 we strongly recommend to read this guide 🛑
+$ # 🛑     before getting your hands dirty      🛑
 $ npm install -g dawson
 $ export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=...
 $ dawson deploy
