@@ -80,7 +80,7 @@ dawson reads the contents of a file named `api.js` in your current working direc
 When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is later fed to [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) which performs the actual deploy; the hard job of creating resources, calculating changes to deploy etc, is left to AWS. You might also opt-out using dawson anytime and simply edit the [CloudFormation Template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html) by yourself.
 
 
-# 2. Writing functions
+# 2. Working with functions
 
 dawson deploys functions to the cloud and optionally makes them available via HTTP, if this statement looks weird to you, you may want to check out:
 - https://www.quora.com/What-are-serverless-app (short)
@@ -88,13 +88,13 @@ dawson deploys functions to the cloud and optionally makes them available via HT
 - https://aws.amazon.com/lambda/serverless-architectures-learn-more/ (PDF)
 - https://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html and https://aws.amazon.com/api-gateway/details/ (suggested readings)
 
-Usually, a function, in dawson's terms, is an handler for an HTTP request *(much like routes in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.
+Usually, a function, in dawson's terms, is an handler for an HTTP request *(much like a route in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.
 
-You should place all of your functions in a file named `api.js` (or you might define them elsewhere and just `export`). The `api.js` file will be parsed and automatically transpiled using `babel` so you can use any JavaScript language features that's supported by `babel-preset-env`, including ES6 Modules, ES7 `Array.prototype.includes` etc.
+You should place all of your functions in a file named `api.js` (or you might define them elsewhere and just `export`). The `api.js` file will be parsed and automatically transpiled using `babel` so you can use any JavaScript language feature that's supported by [`babel-preset-env`](https://github.com/babel/babel-preset-env), including ES6 Modules, ES7 `Array.prototype.includes` etc.
 
-Each function **must** have an `api` property, which tells dawson some information about your function's behaviour; more on this in the *Configuring functions* chapter.
+Each function in the `api.js` file **must** have an `api` property, which tells dawson some information about your function's behaviour; more on this in the *Configuring functions* chapter.
 
-All the lines logged by your functions (via `console.log`, `console.error`, `process.stdout.write` etc...) will be automatically delivered to [Amazon CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html), a persistent and searchable Log Storage and can be fetched and streamed using `$ dawson logs`.
+All the lines logged by your functions (via `console.log`, `console.error`, `process.stdout.write` etc...) will be automatically delivered to [Amazon CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html), a persistent and searchable Log Storage. Logs can be later fetched or streamed using `$ dawson logs`.
 
 #### Basic function: HTML
 ```js
@@ -119,7 +119,7 @@ helloWorld.api = {
 #### Basic function: JSON
 ```js
 // an helloWorld function will be created which, when invoked,
-// will return a JSON String. The returned object will be automatically
+// will return a JSON string. The returned object will be automatically
 // serialized using JSON.stringify(...)
 export function helloWorld (event) {
     console.log('this function was called with this parameter:', event);
