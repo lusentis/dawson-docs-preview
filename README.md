@@ -2,8 +2,12 @@
 dawson documentation
 ====================
 
-dawson is a [serverless](https://auth0.com/blog/what-is-serverless/) web framework for Node.js on AWS ([CloudFormation](https://aws.amazon.com/cloudformation/), [CloudFront](https://aws.amazon.com/cloudfront/), [API Gateway](https://aws.amazon.com/apigateway/), [Lambda](https://aws.amazon.com/lambda/)).  
-You can use `dawson` to build and deploy backend code and infrastructure for single-page apps + API, pure APIs or server-rendered pages.
+dawson is a [serverless](https://auth0.com/blog/what-is-serverless/) web framework for Node.js on AWS. dawson uses [AWS CloudFormation](https://aws.amazon.com/cloudformation/), [Amazon CloudFront](https://aws.amazon.com/cloudfront/), [Amazon API Gateway](https://aws.amazon.com/apigateway/) and  [AWS Lambda](https://aws.amazon.com/lambda/) to deploy the backend code and to manage the infrastructure for you. 
+
+### Is dawson for me?
+👍🏽 I'm building a️ single-page app/website with a backend
+👍🏽 I'm building an API-based service
+👍🏽 I'm building a server-rendered app/website
 
 The main goal of dawson is to be a zero-configuration yet fully extensible *[backend]* web framework for building web apps on AWS. You should be able to start using dawson without creating any configuration file and with only a basic knowledge of Amazon Web Services.
 
