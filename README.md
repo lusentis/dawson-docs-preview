@@ -370,21 +370,37 @@ A Statement that allows access to CloudWatch Logs is automatically added.
 ️☠️ **Do not harcode Physical Resource IDs nor ARNs of resources that are in any CloudFormation Stack. They will change and will break your infrastructure. Use Ref, GetAtt and Sub to refer to Logical IDs instead.** ☠️
 
 **Example**
-```json
+```js
 [{
-  "Effect": "Allow",
-  "Action": ["s3:PutObject"],
-  "Resource": "arn:aws:s3:::*"
+    "Effect": "Allow",
+    "Action": ["s3:PutObject"],
+    "Resource": [{ 'Fn::Sub': 'arn:aws:s3:::${BucketAssets}/*' }]
+}, {
+    Effect: 'Allow',
+    Action: ['dynamodb:Query', 'dynamodb:GetItem'],
+    Resource: [{ 'Fn::Sub': 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${UsersTable}*' }]
 }]
 ```
 
 ### `redirects`
 **Required**: no | **Type**: `boolean` | **Default**: `false`  
-**Use for**: Redirects
+**Use for**: Settings wether a function is expected to return a `307 Temporary Redirect` or not
 
-If `true`, dawson expect this function to always return an object with a `Location` key; the HTTP response will then contain the appropriate Location header. Due to limitations in API Gateway, you cannot return any payload and you cannot mix redirecting and non-redirecting responses.
+If `true`, dawson expect this function to **always return** an Object with a `Location` key. The HTTP response will then contain the appropriate `Location` header.
 
+> Due to limitations in API Gateway, you cannot return any payload when redirecting and you cannot mix redirecting and non-redirecting responses for the same function (i.e.: either a function always redirects or it never does)
 
+**Example**
+```js
+// a simple function that returns an HTTP redirect to https://google.com
+export function index (params) {
+  return { Location: 'https://google.com' }
+}
+index.api = {
+  path: 'something',
+  redirect: true
+}
+```
 
 asdasdasd
 asdasdasd
