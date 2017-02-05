@@ -37,7 +37,7 @@ dawson requires Amazon Web Services credentials to operate. dawson needs the fol
 - either `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`
 - or `AWS_PROFILE` (with `AWS_REGION` if you're not using the profile's default region)
 
-> **These credentials will be only used by dawson to create the CloudFormation Stack and to call sts.AssumeRole when using the *Development Server*. None of your app code will run with these credentials.**
+> **These credentials will be only used by dawson to create/update the CloudFormation Stack and to call sts.AssumeRole when using the *Development Server*. None of your app code will run with these credentials.**
 
 ### short version
 Create an IAM user with `AdministratorAccess` permissions (be sure to create an Access Key), then create a profile with the given credentials (or export them as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`).  
@@ -64,6 +64,8 @@ export AWS_REGION=...
 
 > There are many other ways to set AWS Credentials on your PC, you may refer here for more info: https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html 
 
+---
+
 # 1. Getting to know dawson
 
 You write your app's code and then dawson takes care of building, packing, uploading the code to AWS and of creating the AWS infrastructure that your application needs to run.
@@ -74,17 +76,18 @@ You're kindly invited to keep dawson up-to-date, starting with `v1.0.0` we will 
 
 ### working with *stage*s
 You may want to have more than one deployment for your app, for example you might want to create separate *development* and *production* deployments: you can use the `--stage` parameter when running dawson (or set a DAWSON_STAGE env variable) to tell dawson which stage to operate on. By default, dawson uses a stage named `"default"`.
-Different stages may also have different configurations, including different Domain Names.
+Stages are completely isolated one to each other and they may also have different configurations, including different domain names.
 
 ### a notice about deployment speed
-The *first deployment* will be very slow because many resoruces needs to be created (including a CloudFront distribution) and it will take anything between *15 to 45 minutes*. You can safely kill (Ctrl-C) the dawson command once it says "waiting for stack update to complete".
-Subsequent deploys will *usually take around 2-5 minutes*, or more depending on the Resources that needs to be created and updated.
+The *first deployment* will be very slow because many resources needs to be created (including a CloudFront distribution) and it will take anything between *15 to 45 minutes*. You can safely kill (Ctrl-C) the dawson command once it says "waiting for stack update to complete".
+Subsequent deploys will *usually take around 2-5 minutes* or more, depending on which Resources need to be created and updated.
 
 ### under the hood
 dawson reads the contents of a file named `api.js` in your current working directory. You should write (or just `export`) your functions in this `api.js` file.  
 
 When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is later fed to [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) which performs the actual deploy; the hard job of creating resources, calculating changes to deploy etc, is left to AWS. You might also opt-out using dawson anytime and simply edit the [CloudFormation Template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html) by yourself.
 
+---
 
 # 2. Working with functions
 
@@ -94,7 +97,7 @@ dawson deploys functions to the cloud and optionally makes them available via HT
 - https://aws.amazon.com/lambda/serverless-architectures-learn-more/ (PDF)
 - https://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html and https://aws.amazon.com/api-gateway/details/ (suggested readings)
 
-Usually, a function, in dawson's terms, is an handler for an HTTP request *(much like a route in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.
+**Usually, a function, in dawson's terms, is an handler for an HTTP request *(much like a route in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.**
 
 You should place all of your functions in a file named `api.js` (or you might define them elsewhere and just `export`). The `api.js` file will be parsed and automatically transpiled using `babel` so you can use any JavaScript language feature that's supported by [`babel-preset-env`](https://github.com/babel/babel-preset-env), including ES6 Modules, ES7 `Array.prototype.includes` etc.
 
@@ -117,8 +120,8 @@ export function helloWorld (event) {
     `;
 }
 helloWorld.api = {
-    path: 'hello', // the http path to attach this function to
-    method: 'GET'  // & the http method
+    path: 'hello', // the HTTP path to attach this function to
+    method: 'GET'  // & the HTTP method
 };
 ```
 
@@ -132,16 +135,16 @@ export function helloWorld (event) {
     return { hello: 'world' };
 }
 helloWorld.api = {
-    path: 'hello', // the http path to attach this function to
-    method: 'GET', // & the http method (defaults to GET)
+    path: 'hello', // the HTTP path to attach this function to
+    method: 'GET', // & the HTTP method (defaults to GET)
     responseContentType: 'application/json'
                    // & the Content-type (defaults to 'text/html')
 };
 ```
 
-## 2.1 Function programming model
+## 3. Function programming model
 
-### 2.1.1 Parameters
+### 3.1 Parameters
 
 Given a generic function definition:
 ```js
@@ -180,16 +183,17 @@ If `api.path !== false` the `event` parameter will be an Object with the followi
 The second parameter, `context`, is [Lambda's Context](https://docs.aws.amazon.com/lambda/latest/dg/programming-model-v2.html). You should rarely need to access this property. **Do not call** ~~`context.done`~~, ~~`context.fail`~~ or ~~`context.succeed`~~.
 
 
-### 2.1.2 Return value
+### 3.2 Return value
 
 A function can return:
 * a `string`, which will be returned as-is as the HTTP response;
 * an `Object`, which will be JSON.stringified and returned as the HTTP response (note that returning an object makes sense only if `api.responseContentType === "application/json"`);
-* a `Promise`, which fulfills with any of the previous types; **you can also declare your function as `async` and use `await` in it!**
+* a `Promise`, which fulfills with any of the previous types;   
+  **you can also declare your function as `async` and use `await` in it!**
 
 Currently, functions can not modify HTTP Response Headers.
 
-### 2.1.3 Returning an HTTP Redirect
+#### 3.2.1 Returning an HTTP redirect
 
 To respond with an HTTP Redirect (with an HTTP Status equal to `307 Temporary Redirect`), you must return an Object with a `Location` property. Additionally, the `api.redirects` configuration property must also be set to `true`.
 
@@ -205,7 +209,7 @@ myRoute.api = {
 
 > Due to limitations in API Gateway, you cannot return any payload and you cannot mix redirecting and non-redirecting responses.
 
-### 2.1.4 Responding with an Error
+#### 3.2.2 Returning an error response
 
 When a function fails and an error occurs, you can throw an `Error` or return a rejecting `Promise`.
 dawson hides all uncaught Errors and will not leak any information about it. The Client (either a browser or any other HTTP agent) will receive a generic `HTTP 500 Internal Server Error`.
@@ -230,6 +234,155 @@ When returning an Error like such, the specified `httpStatus` HTTP Status Code w
 * in all other cases, the `response` property is returned as the HTTP response
 
 Currently, dawson supports the following httpStatus codes: `400`, `403`, `404`, `500` (using other Status Codes will result in an API Gateway Internal Error).
+
+## 3.3 Example functions
+
+```js
+// 3.3.1 a basic function
+export function index (params) {
+  console.log('Called with', params)
+  return `<html><body><marquee>I love Marquees</marquee></body></html>`
+}
+index.api = {
+  path: ''
+}
+```
+```js
+// 3.3.2 a basic function returning a JSON Object
+export function fetchMe (params) {
+  return {
+    my: 'data'
+  }
+}
+fetchMe.api = {
+  path: '/fetchMyJSON',
+  responseContentType: 'application/json'
+}
+```
+```js
+// 3.3.3 a function returning a Promise
+export function fetchAsync (params) {
+  return new Promise((resolve, reject) => {
+    // ...
+    resolve('<html><body><center>Bar Baz</center></body></html>')
+  })
+}
+fetchAsync.api = {
+  path: '/fetchSomething'
+}
+```
+```js
+// 3.3.4 a more complex function which uses async/await
+// (api properties are explained in the next chapter)
+export async function listProjects(event) {
+  const tableName = process.env.DAWSON_TableMyProjects;
+  const response = await dynamodb.scan({
+    TableName: tableName
+  }).promise();
+  return {
+    projects: response.Items
+  };
+}
+listProjects.api = {
+  path: 'projects',
+  responseContentType: 'application/json',
+  policyStatements: [{
+    Effect: "Allow",
+    Action: ["dynamodb:Scan"],
+    Resource: { 'Fn::GetAtt': ['TableMyProjects', 'Arn'] }
+  }]
+};
+```
+```js
+// 3.3.5 a basic event handler
+export function index (params) {
+  console.log('Called with', params)
+  return;
+}
+index.api = {
+  path: false // no HTTP endpoint will be deployed
+}
+```
+
+## 4. Function configuration
+
+Each function exported by the `api.js` file **must** have an `api` property.  
+The `api` property is used to configure the function behaviour, as described below:
+
+```js
+export function foo () { /* ... */ }
+foo.api = {
+  path: 'message/{messageId}', // required!
+  authorizer: myAuthorizerFunction,
+  method: 'GET',
+  policyStatements: [{
+    Effect: 'Allow',
+    Action: ['dynamodb:Query', 'dynamodb:GetItem'],
+    Resource: [{ 'Fn::Sub': 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${UsersTable}*' }]
+  }],
+  redirects: false,
+  responseContentType: 'text/html',
+};
+```
+
+### `path`
+**Required**: yes | **Type**: `string`|`boolean`
+**Use for**: Specifying an HTTP path 
+
+The HTTP path to this function, without leading and trailing slashes.  
+The path must be unique in your whole app. You may use path parameters placeholder, as in API Gateway, by sorrounding the parameter name with `{}`).  
+If `false`, no API Gateway method will be deployed (see [Function Parameters](./Function-Parameters) for details).  
+
+>  Due to an API Gateway limitation, `/hello/{name}.html` is [**invalid**](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-mappings.html). `/hello/{name}/profile.html` and `/{foo}/bar/{baz}` are valid (technically, "*each path part must not contain curly braces, or must both begin and end with a curly brace*").  
+  
+
+### `method`
+**Required**: no | **Type**: `string` | **Default**: `"GET"`  
+**Use for**: Specifying an HTTP Method 
+
+### `responseContentType`
+**Required**: no | **Type**: `string` | **Default**: `"text/html"`  
+**Use for**: Specifying a value for the `Content-type` HTTP Response Header
+
+The `Content-type` header to set in the HTTP Response. Valid values includes: `application/json`, `text/html`, `text/plain`, etc. When `application/json` is specified, you should return a JSON-serializable object, JSON.stringify will be called automatically. Custom values are also allowed. Binary data might be corrupted (until AWS Api Gateway will support setting Binary Responses via CloudFormation).
+
+### `authorizer`
+**Required**: no | **Type**: `function` | **Default**: `undefined`  
+**Use for**: Specifying an API Gateway Custom Authorizer to attach to this function
+
+A function to use as [API Gateway Custom Authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) for this endpoint. The authorizer function must be exported from `api.js` as well and its `path` property must be set to `false`. Function's signature and return values matches the ones defined in the [related  documentation on AWS](https://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html).
+
+### `policyStatements`
+**Required**: no | **Type**: `list of maps` | **Default**: `[]`  
+**Use for**: Specifying AWS permissions for this function
+
+When accessing resources on AWS (e.g. upload something to an S3 Bucket, insert or query a DynamoDB Table etc...), your functions need the permission to perform such operation. These permissions are granted using AWS Identity & Access Management (AWS IAM) Role Policies. More info:
+- https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies.html
+- https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genref-arns
+- https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
+
+You can specify a list of [IAM Policy Statements](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html) to set for this Lambda's Role, as you would define in a [CloudFormation template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-iam-policy.html#cfn-iam-policies-policydocument). `Ref`, `Fn::Sub` and `Fn::GetAtt` are supported.  
+
+The value of this property is directly injected in the CloudFormation Template, so you should refer to its Resources using [`Ref`, `Fn::Sub` and `Fn::GetAtt`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference.html) instead of hardcoding ARNs. Currently, the best way to obtain a Resource's Logical Id is to use the `$ dawson describe` command or to inspect the stack from the AWS Console.
+
+A Statement that allows access to CloudWatch Logs is automatically added.  
+
+️☠️ **Do not harcode Physical Resource IDs nor ARNs of resources that are in any CloudFormation Stack. They will change and will break your infrastructure. Use Ref, GetAtt and Sub to refer to Logical IDs instead.** ☠️
+
+**Example**
+```json
+[{
+  "Effect": "Allow",
+  "Action": ["s3:PutObject"],
+  "Resource": "arn:aws:s3:::*"
+}]
+```
+
+### `redirects`
+**Required**: no | **Type**: `boolean` | **Default**: `false`  
+**Use for**: Redirects
+
+If `true`, dawson expect this function to always return an object with a `Location` key; the HTTP response will then contain the appropriate Location header. Due to limitations in API Gateway, you cannot return any payload and you cannot mix redirecting and non-redirecting responses.
 
 
 
