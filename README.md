@@ -322,6 +322,8 @@ index.api = {
 }
 ```
 
+---
+
 ## 4. Function configuration
 
 Each function exported by the `api.js` file **must** have an `api` property.  
@@ -419,6 +421,8 @@ index.api = {
   redirect: true
 }
 ```
+
+---
 
 # 5. Application configuration
 
