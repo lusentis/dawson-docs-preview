@@ -37,7 +37,9 @@ dawson requires Amazon Web Services credentials to operate. dawson needs the fol
 - either `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`
 - or `AWS_PROFILE` (with `AWS_REGION` if you're not using the profile's default region)
 
-> **These credentials will be only used by dawson to create/update the CloudFormation Stack and to call sts.AssumeRole when using the *Development Server*. None of your app code will run with these credentials.**
+**These credentials will be only used by dawson to create/update the CloudFormation Stack and to call sts.AssumeRole when using the *Development Server*. None of your app code will run with these credentials.**
+
+As a safety measure, dawson uses a mechanism to prevent accidental deletion or replacement of *some* resources, which could result in data loss, DNS changes etc, unless the --danger-delete-resources CLI option is specified. Trying to perform some operations, such as deleting S3 Buckets, REST APIs, DynamoDB Tables, CloudFront Distributions will result in an error unless this flag is specified
 
 ### short version
 Create an IAM user with `AdministratorAccess` permissions (be sure to create an Access Key), then create a profile with the given credentials (or export them as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`).  
@@ -74,6 +76,10 @@ You write your app's code and then dawson takes care of building, packing, uploa
 you should install dawson using npm or yarn: `npm install -g dawson` or `yarn global add dawson`. You should then be able to run a `dawson --help` command.  
 You're kindly invited to keep dawson up-to-date, starting with `v1.0.0` we will never introduce backwards-incompatible changes between non-major versions, following strict [SemVer](http://semver.org).
 
+### package.json and entry point
+dawson reads the contents of a file named `api.js` in your current working directory. You should write (or just `export`) your functions in this `api.js` file.  
+dawson uses the `name` field in the `package.json` file in your current working directory to determine the app name, which will be used as a prefix for many AWS Resources that are created automatically. Make sure you have correctly set the `name` field as changing it later will require the whole app to be re-deployed.
+
 ### working with *stage*s
 You may want to have more than one deployment for your app, for example you might want to create separate *development* and *production* deployments: you can use the `--stage` parameter when running dawson (or set a DAWSON_STAGE env variable) to tell dawson which stage to operate on. By default, dawson uses a stage named `"default"`.
 Stages are completely isolated one to each other and they may also have different configurations, including different domain names.
@@ -83,8 +89,6 @@ The *first deployment* will be very slow because many resources needs to be crea
 Subsequent deploys will *usually take around 2-5 minutes* or more, depending on which Resources need to be created and updated.
 
 ### under the hood
-dawson reads the contents of a file named `api.js` in your current working directory. You should write (or just `export`) your functions in this `api.js` file.  
-
 When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is later fed to [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) which performs the actual deploy; the hard job of creating resources, calculating changes to deploy etc, is left to AWS. You might also opt-out using dawson anytime and simply edit the [CloudFormation Template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html) by yourself.
 
 ---
@@ -182,6 +186,20 @@ If `api.path !== false` the `event` parameter will be an Object with the followi
 
 The second parameter, `context`, is [Lambda's Context](https://docs.aws.amazon.com/lambda/latest/dg/programming-model-v2.html). You should rarely need to access this property. **Do not call** ~~`context.done`~~, ~~`context.fail`~~ or ~~`context.succeed`~~.
 
+#### 3.1.1 Supported HTTP request headers
+
+By default only these HTTP Request Headers are  [forwarded](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/forward-custom-headers.html):
+* `Authorization`
+* `Accept`
+* `Content-Type`
+* `Origin`
+* `Referer`
+* `Access-Control-Request-Headers`
+* `Access-Control-Request-Method`
+
+You may add or modify whitelisted headers, see the "Working with templates" chapter.
+
+> Internally, `dawson` uses a [Passthrough Parameter-Mapping Template](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html) to forward request parameters, headers and body to your function.
 
 ### 3.2 Return value
 
@@ -402,18 +420,72 @@ index.api = {
 }
 ```
 
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
-asdasdasd
+# 5. Application configuration
+
+If the default settings does not fit your use case, you can configure dawson's behaviour by adding a `dawson` property in the `package.json` file:
+
+```js
+{
+  "name": "appname", // required and unique in an AWS Account
+  // other package.json fields...
+  "dawson": {
+    "ignore": [
+      "frontend"
+    ],
+    "route53": {
+      "default": "Z187MLBSXQKXXX"
+    },
+    "cloudfrontRootOrigin": "api",
+    "cloudfront": {
+      "default": true
+    }
+  }
+}
+```
+
+You must set at least the **`name`** field in your `package.json`; this `name` will be used as a prefix for all the `CloudFormation` stacks and must be unique in a given AWS account. It's not possible to change the `name` after you have deployed your app.
+
+Optionally, you can define a `dawson` property as an Object with the following properties:
+
+* **pre-deploy** (string): a command to execute before starting the deployment. If command exits with status <> 0, the deployment is aborted.
+* **post-deploy** (string): a command to run after the deployment has been successfully completed.
+* **ignore** (list of strings): a list of partial paths to ignore when compiling, when zipping the bundle and when watching files for changes. **Do not** specify `node_modules` here, it is already ignored as needed. Paths should be relative to the project root.
+* **route53** (object: string -> string, defaults to `{}`): an object which maps app stages to Route53 Hosted Zone IDs. If an Hosted Zone ID is specified, the DNS Record corresponding to the CloudFront Alias (CNAME) is created (as an `A ALIAS` to the CloudFront distribution). Needless to say, he Route53 Hosted Zone must be an Alias' ancestor or the deployment will fail.  
+* **cloudfrontRootOrigin** (either `"assets"` or `"api"`, defaults to `"api"`):  
+  This option controls the [behaviour](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesCacheBehavior) of the CloudFront distribution and the development server.
+  * if `"assets"` (typically for Single Page Apps), all requests are served using the S3 Assets Bucket contents, except requests starting with `/prod` which are forwarded to your APIs.
+  * if `"api"` (typically for APIs or Server-Rendered pages), all requests are forwarded to your APIs, except requests starting with `/assets` which are served using the S3 Assets Bucket contents.  
+  When forwarding requests to the S3 Assets Bucket, the `/assets` prefix will not be stripped: you need to have an `assets` folder at top level in your bucket. At the opposite, when forwarding requests to your API, the `/prod` prefix will be stripped (because it references API Gateway's Stage).  
+  On startup, the development server prints these mappings so you can check that you've properly configured everything.
+* **cloudfront** (object: string -> string|boolean, defaults to `{}`): an object which maps app stages to domain names. Please keep in mind that if changing this setting will result in updating, creating or deleting a CloudFront Distribution, the deployment will take approximately 15-20 minutes.  
+
+**Example `cloudfront` property**
+```js
+"cloudfront": {
+    "default": "myapp123.com",
+    "test": true,
+    "dev": false
+}
+```
+  * When `false`, no CloudFront Distribution will be created for that stage.  
+  * When `"string"` (a valid domain name), a CloudFront Distribution will be created and `"string"` will be set as a custom domain name (or [Alias (CNAME)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)). The CNAME that you specify must be **globally unique in AWS**. If the CNAME specified here is already in use the deployment will fail. An SSL/TLS certificate might be requested for this domain, *see below for details*.
+  * When `true` (this is also the predefined behaviour for stages not specified here), a CloudFront Distribution will be created without any Alias (CNAME) and can be accessed using the usual https://d123456789.cloudfront.net URL.  
+
+> Keep in mind that only HTTPS is supported, and a TLS certificate might be automatically requested by dawson using AWS ACM. See below for details.
+
+
+### 5.1 SSL/TLS Certificates
+
+If you specify a custom domain (Alias, CNAME) in the cloudfront property, the following behaviour will apply:
+
+1. dawson searches for certificates that are valid for the custom domain specified for the current stage
+2. if a certificate is found, it will be associated to this Distribution and the deployment continues
+3. if no valid certificate is found, a new SSL/TLS certificate will be requested and the deployment will be aborted. Instructions for certificate validation will be printed to the console; usually, domain contacts and some admin e-mail accounts will receive an email with a validation link. You can find more information on the validation process in the [Validate Domain Ownership](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate.html) page.
+
+If you don't want to request an SSL/TLS certificate you can specify the `--skip-acm` flag with every deploy command. Please be aware that specifying the `--skip-acm` flag when a certificate has been already requested and attached to a CloudFront Distribution will result in such certificate to be disassociated from the Distribution (~20 minutes to deploy).
+
+> **Notes on the current implementation**  
+  - dawson does not manage AWS ACM Certificates via CloudFormation due to an AWS Region limitation
+  - AWS ACM Certificates for CloudFormation will be created in the us-east-1
+  - dawson never deletes AWS ACM Certificates and won't request a new certificate if a valid one is found
 
