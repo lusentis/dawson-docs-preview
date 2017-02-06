@@ -475,7 +475,7 @@ Optionally, you can define a `dawson` property as an Object with the following p
 
 If you specify a custom domain (Alias, CNAME) in the cloudfront property, the following behaviour will apply:
 
-1. dawson searches for certificates that are valid for the custom domain specified for the current stage
+1. dawson searches your Account for AWS ACM certificates that are valid for the custom domain specified for the current stage
 2. if a certificate is found, it will be associated to this Distribution and the deployment continues
 3. if no valid certificate is found, a new SSL/TLS certificate will be requested and the deployment will be aborted. Instructions for certificate validation will be printed to the console; usually, domain contacts and some admin e-mail accounts will receive an email with a validation link. You can find more information on the validation process in the [Validate Domain Ownership](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-validate.html) page.
 
@@ -485,4 +485,13 @@ If you don't want to request an SSL/TLS certificate you can specify the `--skip-
   - dawson does not manage AWS ACM Certificates via CloudFormation due to an AWS Region limitation
   - AWS ACM Certificates for CloudFormation will be created in the us-east-1
   - dawson never deletes AWS ACM Certificates and won't request a new certificate if a valid one is found
+
+
+# 6. Working with the template
+
+### 6.1 Adding custom resources
+TODO
+
+### 6.2 Modifying dawson-managed resources
+TODO
 
