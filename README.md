@@ -1,7 +1,8 @@
+
 dawson documentation
 ====================
 
-dawson is a [serverless](https://auth0.com/blog/what-is-serverless/) web framework for Node.js on AWS. dawson uses [AWS CloudFormation](https://aws.amazon.com/cloudformation/), [Amazon CloudFront](https://aws.amazon.com/cloudfront/), [Amazon API Gateway](https://aws.amazon.com/apigateway/) and  [AWS Lambda](https://aws.amazon.com/lambda/) to deploy the backend code and to manage the infrastructure for you.
+dawson is a [serverless](https://auth0.com/blog/what-is-serverless/) web framework for Node.js on AWS. dawson uses [AWS CloudFormation](https://aws.amazon.com/cloudformation/), [Amazon CloudFront](https://aws.amazon.com/cloudfront/), [Amazon API Gateway](https://aws.amazon.com/apigateway/) and  [AWS Lambda](https://aws.amazon.com/lambda/) to deploy the backend code and to manage the infrastructure for you. 
 
 ### Is dawson for me?
 👍🏽 I'm building a️ single-page app/website with a backend  
@@ -29,44 +30,6 @@ $ npm install -g dawson
 $ export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=...
 $ dawson deploy
 ```
-
-# Table of Contents
-
-<!-- toc -->
-
-- [0. Working with AWS](#0-working-with-aws)
-    + [short version](#short-version)
-    + [long version for AWS beginners](#long-version-for-aws-beginners)
-- [1. Getting to know dawson](#1-getting-to-know-dawson)
-    + [installing](#installing)
-    + [package.json and entry point](#packagejson-and-entry-point)
-    + [working with *stage*s](#working-with-stages)
-    + [a notice about deployment speed](#a-notice-about-deployment-speed)
-    + [under the hood](#under-the-hood)
-- [2. Working with functions](#2-working-with-functions)
-      - [Basic function: HTML](#basic-function-html)
-      - [Basic function: JSON](#basic-function-json)
-  * [3. Function programming model](#3-function-programming-model)
-    + [3.1 Parameters](#31-parameters)
-      - [3.1.1 Supported HTTP request headers](#311-supported-http-request-headers)
-    + [3.2 Return value](#32-return-value)
-      - [3.2.1 Returning an HTTP redirect](#321-returning-an-http-redirect)
-      - [3.2.2 Returning an error response](#322-returning-an-error-response)
-  * [3.3 Example functions](#33-example-functions)
-  * [4. Function configuration](#4-function-configuration)
-    + [`path`](#path)
-    + [`method`](#method)
-    + [`responseContentType`](#responsecontenttype)
-    + [`authorizer`](#authorizer)
-    + [`policyStatements`](#policystatements)
-    + [`redirects`](#redirects)
-- [5. Application configuration](#5-application-configuration)
-    + [5.1 SSL/TLS Certificates](#51-ssltls-certificates)
-- [6. Working with the template](#6-working-with-the-template)
-    + [6.1 Adding custom resources](#61-adding-custom-resources)
-    + [6.2 Modifying dawson-managed resources](#62-modifying-dawson-managed-resources)
-
-<!-- tocstop -->
 
 # 0. Working with AWS
 
@@ -101,7 +64,7 @@ export AWS_REGION=...
 
 > You can find more information about AWS IAM Credentials here: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys
 
-> There are many other ways to set AWS Credentials on your PC, you may refer here for more info: https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
+> There are many other ways to set AWS Credentials on your PC, you may refer here for more info: https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html 
 
 ---
 
@@ -272,7 +235,7 @@ dawson hides all uncaught Errors and will not leak any information about it. The
 You may obviously want to return expected (i.e. *Handled*) errors to the client, instead.
 dawson supports custom error responses, using the following model:
 
-Instead of
+Instead of 
 ~~```throw new Error('I wanted to throw a 403 error')```~~ you should write:
 ```js
 throw new Error(JSON.stringify({
@@ -384,18 +347,18 @@ foo.api = {
 
 ### `path`
 **Required**: yes | **Type**: `string`|`boolean`
-**Use for**: Specifying an HTTP path
+**Use for**: Specifying an HTTP path 
 
 The HTTP path to this function, without leading and trailing slashes.  
 The path must be unique in your whole app. You may use path parameters placeholder, as in API Gateway, by sorrounding the parameter name with `{}`).  
 If `false`, no API Gateway method will be deployed (see [Function Parameters](./Function-Parameters) for details).  
 
 >  Due to an API Gateway limitation, `/hello/{name}.html` is [**invalid**](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-mappings.html). `/hello/{name}/profile.html` and `/{foo}/bar/{baz}` are valid (technically, "*each path part must not contain curly braces, or must both begin and end with a curly brace*").  
-
+  
 
 ### `method`
 **Required**: no | **Type**: `string` | **Default**: `"GET"`  
-**Use for**: Specifying an HTTP Method
+**Use for**: Specifying an HTTP Method 
 
 ### `responseContentType`
 **Required**: no | **Type**: `string` | **Default**: `"text/html"`  
@@ -531,3 +494,4 @@ TODO
 
 ### 6.2 Modifying dawson-managed resources
 TODO
+
