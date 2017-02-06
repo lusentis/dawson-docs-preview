@@ -441,7 +441,9 @@ If the default settings does not fit your use case, you can configure dawson's b
     },
     "cloudfrontRootOrigin": "api",
     "cloudfront": {
-      "default": true
+      "default": true,
+      "production": "myapp.com",
+      "bar": false
     }
   }
 }
@@ -462,15 +464,6 @@ Optionally, you can define a `dawson` property as an Object with the following p
   When forwarding requests to the S3 Assets Bucket, the `/assets` prefix will not be stripped: you need to have an `assets` folder at top level in your bucket. At the opposite, when forwarding requests to your API, the `/prod` prefix will be stripped (because it references API Gateway's Stage).  
   On startup, the development server prints these mappings so you can check that you've properly configured everything.
 * **cloudfront** (object: string -> string|boolean, defaults to `{}`): an object which maps app stages to domain names. Please keep in mind that if changing this setting will result in updating, creating or deleting a CloudFront Distribution, the deployment will take approximately 15-20 minutes.  
-
-**Example `cloudfront` property**
-```js
-"cloudfront": {
-    "default": "myapp123.com",
-    "test": true,
-    "dev": false
-}
-```
   * When `false`, no CloudFront Distribution will be created for that stage.  
   * When `"string"` (a valid domain name), a CloudFront Distribution will be created and `"string"` will be set as a custom domain name (or [Alias (CNAME)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)). The CNAME that you specify must be **globally unique in AWS**. If the CNAME specified here is already in use the deployment will fail. An SSL/TLS certificate might be requested for this domain, *see below for details*.
   * When `true` (this is also the predefined behaviour for stages not specified here), a CloudFront Distribution will be created without any Alias (CNAME) and can be accessed using the usual https://d123456789.cloudfront.net URL.  
