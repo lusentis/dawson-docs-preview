@@ -562,7 +562,7 @@ export function processCFTemplate(currentTemplate, dawsonInternalVariables);
 }
 ```
 
-Please **do not hardcode Resource IDs** in your code. **They will change and will break your application**. Always set an Output and access the Physical Resource Id from `process.env`. It's also tempting to use manually Name resources such as DynamoDB Tables and S3 Buckets: don't; it will probably break the built-in Stages support.
+Please **do not hardcode Resource IDs** in your code. **They will change and will break your application**. Always set an Output and access the Physical Resource Id from `process.env`. It's also tempting to use developer-provided names for resources such as DynamoDB Tables and S3 Buckets: don't; it will probably break the built-in Stages support.
 
 > The full Template Reference is available in the [AWS CloudFormation User Guide](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-reference.html).
 > You can use `Fn::GetAtt`, `Fn::Sub`, `Ref` etc to reference other resources in this Template.
