@@ -37,16 +37,16 @@ dawson requires Amazon Web Services credentials to operate. dawson needs the fol
 - either `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`
 - or `AWS_PROFILE` (with `AWS_REGION` if you're not using the profile's default region)
 
-**These credentials will be only used by dawson to create/update the CloudFormation Stack and to call sts.AssumeRole when using the *Development Server*. None of your app code will run with these credentials.**
+> **These credentials will be only used by dawson to create/update the CloudFormation Stack and to call sts.AssumeRole when using the *Development Server*. None of your app code will run with these credentials.**
 
 As a safety measure, dawson uses a mechanism to prevent accidental deletion or replacement of *some* resources, which could result in data loss, DNS changes etc, unless the --danger-delete-resources CLI option is specified. Trying to perform some operations, such as deleting S3 Buckets, REST APIs, DynamoDB Tables, CloudFront Distributions will result in an error unless this flag is specified
 
-### short version
+### obtaining AWS Credentials: short version
 Create an IAM user with `AdministratorAccess` permissions (be sure to create an Access Key), then create a profile with the given credentials (or export them as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`).  
 
 > Since we use the `aws-sdk-js`, any other method of setting credentials should work and can be used (e.g. EC2 Instance Role).
 
-### long version for AWS beginners
+### obtaining AWS Credentials: long version for AWS beginners
 
 1. create an Amazon Web Services Account or login into an existing account
 2. from the top menu, choose Services and find *Identity & Access Management* (short: IAM)
@@ -54,7 +54,7 @@ Create an IAM user with `AdministratorAccess` permissions (be sure to create an 
 4. enter an username (for example: *my-dawson-project*) and check the "Programmatic access" box. Click next.
 5. click on "Attach existing policies directly" and search for a Policy named "AdministratorAccess", click next and confirm
 6. the confirmation page will show a table with the credentials; you must write down the values of "Access key ID" (which usually starts with `AKIA`) and "Secret access key". Keep in mind that the value for Secret access key won't be shown again after you leave this page
-7. point an AWS Region in which you want to deploy to; there's no default Region set. You may use `us-east-1` if you're located in the US or `eu-west-1` if you're located in EU. You need to choose a region in which AWS Lambda and Amazon API Gateway are supported, for more info check out the [AWS Region Table](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/).
+7. find an AWS Region in which you want to work; there's no default Region set. You may use `us-east-1` if you're located in the US or `eu-west-1` if you're located in EU. You need to choose a region in which AWS Lambda and Amazon API Gateway are supported, for more info check out the [AWS Region Table](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/).
 7. from a terminal window your PC, which you'll use to run the dawson command, you may run:
 ```bash
 export AWS_ACCESS_KEY_ID=...
@@ -78,30 +78,51 @@ You're kindly invited to keep dawson up-to-date, starting with `v1.0.0` we will 
 
 ### package.json and entry point
 dawson reads the contents of a file named `api.js` in your current working directory. You should write (or just `export`) your functions in this `api.js` file.  
-dawson uses the `name` field in the `package.json` file in your current working directory to determine the app name, which will be used as a prefix for many AWS Resources that are created automatically. Make sure you have correctly set the `name` field as changing it later will require the whole app to be re-deployed.
+dawson uses the `name` field in the `package.json` file in your current working directory to determine the app name, which will be used as a prefix for many AWS Resources that are created automatically. Make sure you have correctly set the `name` field it's *not possible to change* it later.
+
+### the dawson CLI
+dawson ships a few commands that you should use to manage your application, here's a brief overview. Up-to-date reference for commands and argumends may be accessed using `$ dawson --help`.
+`$ dawson deploy` creates or updates the whole infrastructure and deploys your application
+`$ dawson log -t -f <function>` pulls function's logs from AWS in real time
+`$ dawson describe` list all of the Resources that have been deployed
+`$ dawson dev` starts a **development server**
+
+### templates, *under the hood*
+When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a (*JSON*) description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is called **Template**. The Template is then uploaded to AWS, which performs the actual deploy. AWS takes care of creating resources, calculating changes and to perform the actual deployment. 
+
+**The description will contain the following Resources:**
+- each Function, defined as an [AWS Lambda Function](https://aws.amazon.com/lambda/faqs/)
+- an [API Gateway HTTP Endpoint](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-step-by-step.html), linked to each function (if a `path` is set)
+- one [S3 Bucket](https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html) is created and your static assets (html, css, js,...) are uploaded there; dawson calls it `BucketAssets`
+- a [CloudFront Distribution](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html) (*like a CDN*) is created and is configured to serve the static assets from S3 and the API Endpoints from API Gateway; dawson calls it `DistributionWWW`
+- *other support resources*
+
+*Reference architecture:*
+![](https://rawgit.com/dawson-org/dawson-cli/images/architecture.png)
+
+> You can add more Resources as you need and fully customize even Resources that are managed by dawson.  
+Internally, dawson is building and deploying [CloudFormation Stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html).
 
 ### working with *stage*s
-You may want to have more than one deployment for your app, for example you might want to create separate *development* and *production* deployments: you can use the `--stage` parameter when running dawson (or set a DAWSON_STAGE env variable) to tell dawson which stage to operate on. By default, dawson uses a stage named `"default"`.
+You may want to have more than one deployment for your app, for example you might want to create separate *development* and *production* deployments: you can use the `--stage` parameter when running dawson (or set a `DAWSON_STAGE` environment variable) to tell dawson which stage to operate on. By default, dawson uses a stage named `"default"`.
 Stages are completely isolated one to each other and they may also have different configurations, including different domain names.
 
-### a notice about deployment speed
+### deployment speed
 The *first deployment* will be very slow because many resources needs to be created (including a CloudFront distribution) and it will take anything between *15 to 45 minutes*. You can safely kill (Ctrl-C) the dawson command once it says "waiting for stack update to complete".
 Subsequent deploys will *usually take around 2-5 minutes* or more, depending on which Resources need to be created and updated.
-
-### under the hood
-When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is later fed to [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) which performs the actual deploy; the hard job of creating resources, calculating changes to deploy etc, is left to AWS. You might also opt-out using dawson anytime and simply edit the [CloudFormation Template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html) by yourself.
 
 ---
 
 # 2. Working with functions
 
-dawson deploys functions to the cloud and optionally makes them available via HTTP, if this statement looks weird to you, you may want to check out:
+**dawson deploys functions to the cloud and optionally makes them available via HTTP(S).**
+If this statement looks weird to you, you may want to check out the following beginners-friendly articles:
 - https://www.quora.com/What-are-serverless-app (short)
 - https://martinfowler.com/articles/serverless.html (long)
 - https://aws.amazon.com/lambda/serverless-architectures-learn-more/ (PDF)
 - https://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html and https://aws.amazon.com/api-gateway/details/ (suggested readings)
 
-**Usually, a function, in dawson's terms, is an handler for an HTTP request *(much like a route in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.**
+**Usually, a Function, in dawson's terms, is an handler for an HTTP request *(much like a route in a koa/express app)*, which takes incoming parameters (such as HTTP Body, Querystring, etc) and returns an output to be displayed in a browser.**
 
 You should place all of your functions in a file named `api.js` (or you might define them elsewhere and just `export`). The `api.js` file will be parsed and automatically transpiled using `babel` so you can use any JavaScript language feature that's supported by [`babel-preset-env`](https://github.com/babel/babel-preset-env), including ES6 Modules, ES7 `Array.prototype.includes` etc.
 
@@ -109,7 +130,7 @@ Each function in the `api.js` file **must** have an `api` property, which tells 
 
 All the lines logged by your functions (via `console.log`, `console.error`, `process.stdout.write` etc...) will be automatically delivered to [Amazon CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html), a persistent and searchable Log Storage. Logs can be later fetched or streamed using `$ dawson logs`.
 
-#### Basic function: HTML
+**Function example: returning an HTML page**
 ```js
 // an helloWorld function will be created which, when invoked,
 // will return an HTML string
@@ -129,7 +150,7 @@ helloWorld.api = {
 };
 ```
 
-#### Basic function: JSON
+**Function example: returning a JSON Object**
 ```js
 // an helloWorld function will be created which, when invoked,
 // will return a JSON string. The returned object will be automatically
@@ -146,6 +167,8 @@ helloWorld.api = {
 };
 ```
 
+---
+
 ## 3. Function programming model
 
 ### 3.1 Parameters
@@ -158,9 +181,9 @@ helloWorld.api = {
 };
 ```
 
-If `api.path === false`, the `event` parameter will be exactly the event Object that the Lambda receives from other AWS services.
+If `api.path === false`, the `event` parameter will be exactly the event Object that the Lambda receives from other AWS services. Typically, you set `path: false` when this Function is used as an AWS Event handler (for processing events from DynamoDB Streams, Kinesis Streams, S3 Events, CloudWatch Events, etc.); in this case, no HTTP Endpoint will be created.
 
-If `api.path !== false` the `event` parameter will be an Object with the following properties:
+If `api.path !== false`, the Function expects to be called via an HTTP Request and the `event` parameter will be an Object with the following properties:
 ```js
 {
   "params": {
@@ -186,7 +209,17 @@ If `api.path !== false` the `event` parameter will be an Object with the followi
 
 The second parameter, `context`, is [Lambda's Context](https://docs.aws.amazon.com/lambda/latest/dg/programming-model-v2.html). You should rarely need to access this property. **Do not call** ~~`context.done`~~, ~~`context.fail`~~ or ~~`context.succeed`~~.
 
-#### 3.1.1 Supported HTTP request headers
+#### 3.1.1 Accessing Template Outputs and Custom Resources
+Additionally, every function has access to a `process.env` Object.  
+dawson sets the following properties:
+* **`NODE_ENV`** will match the value of `process.env.NODE_ENV` that was set when executing `$ dawson deploy`
+* **`DAWSON_AssetsBucket`** the Physical Resource Name of the S3 Bucket that contains the static assets
+* **`DAWSON_DistributionWWW`** the CNAME (DNS name) of the CloudFront Distribution
+* each of the Template Outputs, including custom Outputs, as `DAWSON_<OutputName>`. For Example, a custom Output named `FooBar`, will be available from your Functions as `process.env.DAWSON_FooBar` (Output Name's CaSe is preserved).
+
+See Chapter 6 for details about referencing Custom Resources.
+
+#### 3.1.2 Supported HTTP request headers
 
 By default only these HTTP Request Headers are  [forwarded](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/forward-custom-headers.html):
 * `Authorization`
@@ -487,11 +520,83 @@ If you don't want to request an SSL/TLS certificate you can specify the `--skip-
   - dawson never deletes AWS ACM Certificates and won't request a new certificate if a valid one is found
 
 
-# 6. Working with the template
+# 6. Working with the Template
+
+As we introduced above, the Template is a textual (JSON) representations of all the Resources that compose your infrastructure. The Template is a pure [AWS CloudFormation Template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html), which you can fully customize.
+
+As you may know, each CloudFormation Template is composed by a `Resources` and an `Outputs` properties. Outputs contains a map to values that external Resources can access.
 
 ### 6.1 Adding custom resources
-TODO
+Sooner or later, you'll probably need to add more Resources to your infrastructure, such as DynamoDB Tables, S3 Buckets, SQS Queues, SNS Topics, etc. dawson provides a method to add custom resources to the Template that will be deployed to AWS.
+Define and export a function named `customTemplateFragment` from the `api.js` file; this function takes two parameters and must return an Object, which dawson will merge its Resources on.
+There's no particular restriction on what resources you can add here, just keep in mind that:
+- you have no access to the Template generated by dawson (because it's actually not yet *created*)
+- you must avoid circular dependencies between resources
+- if you add an API Gateway Method, you should update the `<deploymentLogicalName>.DependsOn` list to include such method's LogicalName (what?! ask me if unclear), otherwise you'll get a cryptic error from CloudFormation / API Gateway. `deploymentLogicalName` is available as `deploymentLogicalName` property on `cutomTemplateFragment`'s second parameter
+
+**Example**
+```js
+export function processCFTemplate(currentTemplate, dawsonInternalVariables);
+ // currentTemplate = {} -- because this function is called before processing anything
+ // dawsonInternalVariables = {
+ //   deploymentLogicalName: `<RANDOM STRING>`
+ // }
+ return {
+    Resources: {
+        BucketVideos: {
+            // create a new Bucket with BucketVideos as logical name
+            Type: 'AWS::S3::Bucket'
+        }
+    },
+    Outputs: {
+        // publishes the BucketVideos' PhysicalName so it's available as
+        // process.env.DAWSON_BucketVideos
+        // in every Function
+        BucketVideos: { Value: { Ref: 'BucketVideos' } }
+    }
+ };
+}
+```
+
+Please **do not hardcode Resource IDs** in your code. **They will change and will break your application**. Always set an Output and access the Physical Resource Id from `process.env`. It's also tempting to use manually Name resources such as DynamoDB Tables and S3 Buckets: don't; it will probably break the built-in Stages support.
+
+> The full Template Reference is available in the [AWS CloudFormation User Guide](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-reference.html).
+> You can use `Fn::GetAtt`, `Fn::Sub`, `Ref` etc to reference other resources in this Template.
+
 
 ### 6.2 Modifying dawson-managed resources
+You can modify every part of a Template, overriding dawson's configuration.  
+Define and export a function named `processCFTemplate` from the `api.js` file; this function takes the Template Object right before dawson deploys it and must return an updated Template Object.
+There's one gotcha: you **can not add or modify `Outputs`** using this function.
+
+**Example**
+```js
+import merge from 'lodash/merge'; // you can use any implementation of (deep) merge, or just merge "by hand"
+
+export function processCFTemplate (template) {
+    merge(template, {
+        Resources: {
+            BucketAssets: {
+                Properties: {
+                    /* sets the contents of BucketAssets to private, otherwise public by default */
+                    AccessControl: 'Private'
+                }
+            }
+        }
+    });
+}
+```
+
+> The full Template Reference is available in the [AWS CloudFormation User Guide](http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-reference.html).
+> You can use `Fn::GetAtt`, `Fn::Sub`, `Ref` etc to reference other resources in this Template.
+
+> Technically, you *could* add or modiffy Outputs using this function; they just won't be availabe to Functions via `process.env.DAWSON_xxx`, because it's too late for them to be added to the `Environment` property in CloudFormation.
+
+# 7. Working with the Development Server
+
 TODO
+
+```bash
+$ dawson dev --help
+```
 
