@@ -213,7 +213,7 @@ The second parameter, `context`, is [Lambda's Context](https://docs.aws.amazon.c
 Additionally, every function has access to a `process.env` Object.  
 dawson sets the following properties:
 * **`NODE_ENV`** will match the value of `process.env.NODE_ENV` that was set when executing `$ dawson deploy`
-* **`DAWSON_AssetsBucket`** the Physical Resource Name of the S3 Bucket that contains the static assets
+* **`DAWSON_BucketAssets`** the Physical Resource Name of the S3 Bucket that contains the static assets
 * **`DAWSON_DistributionWWW`** the CNAME (DNS name) of the CloudFront Distribution
 * each of the Template Outputs, including custom Outputs, as `DAWSON_<OutputName>`. For Example, a custom Output named `FooBar`, will be available from your Functions as `process.env.DAWSON_FooBar` (Output Name's CaSe is preserved).
 
