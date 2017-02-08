@@ -598,6 +598,8 @@ export function processCFTemplate (template) {
 
 > Technically, you *could* add or modiffy Outputs using this function; they just won't be availabe to Functions via `process.env.DAWSON_xxx`, because it's too late for them to be added to the `Environment` property in CloudFormation.
 
+---
+
 # 7. Working with the Development Server
 
 TODO
