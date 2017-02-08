@@ -547,12 +547,13 @@ export function processCFTemplate(currentTemplate, dawsonInternalVariables);
  return {
     Resources: {
         BucketVideos: {
-            // create a new Bucket with BucketVideos as logical name
+            // create a new Bucket with BucketVideos as Logical Name
             Type: 'AWS::S3::Bucket'
         }
     },
     Outputs: {
-        // publishes the BucketVideos' PhysicalName so it's available as
+        // publishes the BucketVideos' Physical Name (the actual AWS Resource Name)
+        // so it's available as
         // process.env.DAWSON_BucketVideos
         // in every Function
         BucketVideos: { Value: { Ref: 'BucketVideos' } }
