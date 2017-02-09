@@ -613,7 +613,7 @@ There's no particular restriction on what resources you can add here, just keep 
 
 **Example**
 ```js
-export function processCFTemplate(currentTemplate, dawsonInternalVariables);
+export function customTemplateFragment(currentTemplate, dawsonInternalVariables);
  // currentTemplate = {} -- because this function is called before processing anything
  // dawsonInternalVariables = {
  //   deploymentLogicalName: `<RANDOM STRING>`
@@ -654,7 +654,7 @@ There's one gotcha: you **can not add or modify `Outputs`** using this function.
 import merge from 'lodash/merge'; // you can use any implementation of (deep) merge, or just merge "by hand"
 
 export function processCFTemplate (template) {
-    merge(template, {
+    return merge(template, {
         Resources: {
             BucketAssets: {
                 Properties: {
