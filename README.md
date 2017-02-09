@@ -41,12 +41,12 @@ dawson requires Amazon Web Services credentials to operate. dawson needs the fol
 
 As a safety measure, dawson uses a mechanism to prevent accidental deletion or replacement of *some* resources, which could result in data loss, DNS changes etc, unless the --danger-delete-resources CLI option is specified. Trying to perform some operations, such as deleting S3 Buckets, REST APIs, DynamoDB Tables, CloudFront Distributions will result in an error unless this flag is specified
 
-### obtaining AWS Credentials: short version
+# obtaining AWS Credentials: short version
 Create an IAM user with `AdministratorAccess` permissions (be sure to create an Access Key), then create a profile with the given credentials (or export them as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`).  
 
 > Since we use the `aws-sdk-js`, any other method of setting credentials should work and can be used (e.g. EC2 Instance Role).
 
-### obtaining AWS Credentials: long version for AWS beginners
+# obtaining AWS Credentials: long version for AWS beginners
 
 1. create an Amazon Web Services Account or login into an existing account
 2. from the top menu, choose Services and find *Identity & Access Management* (short: IAM)
@@ -72,22 +72,23 @@ export AWS_REGION=...
 
 You write your app's code and then dawson takes care of building, packing, uploading the code to AWS and of creating the AWS infrastructure that your application needs to run.
 
-### 1.1 installing
+## 1.1 installing
 you should install dawson using npm or yarn: `npm install -g dawson` or `yarn global add dawson`. You should then be able to run a `dawson --help` command.  
 You're kindly invited to keep dawson up-to-date, starting with `v1.0.0` we will never introduce backwards-incompatible changes between non-major versions, following strict [SemVer](http://semver.org).
 
-### 1.2 package.json and entry point
+## 1.2 package.json and entry point
 dawson reads the contents of a file named `api.js` in your current working directory. You should write (or just `export`) your functions in this `api.js` file.  
 dawson uses the `name` field in the `package.json` file in your current working directory to determine the app name, which will be used as a prefix for many AWS Resources that are created automatically. Make sure you have correctly set the `name` field it's *not possible to change* it later.
 
-### 1.3 the dawson CLI
+## 1.3 the dawson CLI
 dawson ships a few commands that you should use to manage your application, here's a brief overview. Up-to-date reference for commands and argumends may be accessed using `$ dawson --help`.
-`$ dawson deploy` creates or updates the whole infrastructure and deploys your application
-`$ dawson log -t -f <function>` pulls function's logs from AWS in real time
-`$ dawson describe` list all of the Resources that have been deployed
-`$ dawson dev` starts a **development server**
 
-### 1.4 templates, *under the hood*
+`$ dawson deploy` creates or updates the whole infrastructure and deploys your application  
+`$ dawson log -t -f <function>` pulls function's logs from AWS in real time  
+`$ dawson describe` list all of the Resources that have been deployed  
+`$ dawson dev` starts a **development server**  
+
+## 1.4 templates, *under the hood*
 When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a (*JSON*) description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is called **Template**. The Template is then uploaded to AWS, which performs the actual deploy. AWS takes care of creating resources, calculating changes and to perform the actual deployment. 
 
 **The description will contain the following Resources:**
@@ -103,11 +104,11 @@ When you run the `$ dawson deploy` command, dawson reads your file's contents an
 > You can add more Resources as you need and fully customize even Resources that are managed by dawson.  
 Internally, dawson is building and deploying [CloudFormation Stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html).
 
-### 1.5 working with *stage*s
+## 1.5 working with *stage*s
 You may want to have more than one deployment for your app, for example you might want to create separate *development* and *production* deployments: you can use the `--stage` parameter when running dawson (or set a `DAWSON_STAGE` environment variable) to tell dawson which stage to operate on. By default, dawson uses a stage named `"default"`.
 Stages are completely isolated one to each other and they may also have different configurations, including different domain names.
 
-### 1.6 deployment speed
+## 1.6 deployment speed
 The *first deployment* will be very slow because many resources needs to be created (including a CloudFront distribution) and it will take anything between *15 to 45 minutes*. You can safely kill (Ctrl-C) the dawson command once it says "waiting for stack update to complete".
 Subsequent deploys will *usually take around 2-5 minutes* or more, depending on which Resources need to be created and updated.
 
@@ -169,9 +170,9 @@ helloWorld.api = {
 
 ---
 
-## 3. Function programming model
+# 3. Function programming model
 
-### 3.1 Parameters
+## 3.1 Parameters
 
 Given a generic function definition:
 ```js
@@ -209,7 +210,7 @@ If `api.path !== false`, the Function expects to be called via an HTTP Request a
 
 The second parameter, `context`, is [Lambda's Context](https://docs.aws.amazon.com/lambda/latest/dg/programming-model-v2.html). You should rarely need to access this property. **Do not call** ~~`context.done`~~, ~~`context.fail`~~ or ~~`context.succeed`~~.
 
-#### 3.1.1 Accessing Template Outputs and Custom Resources
+### 3.1.1 Accessing Template Outputs and Custom Resources
 Additionally, every function has access to a `process.env` Object.  
 dawson sets the following properties:
 * **`NODE_ENV`** will match the value of `process.env.NODE_ENV` that was set when executing `$ dawson deploy`
@@ -219,7 +220,7 @@ dawson sets the following properties:
 
 See Chapter 6 for details about referencing Custom Resources.
 
-#### 3.1.2 Supported HTTP request headers
+### 3.1.2 Supported HTTP request headers
 
 By default only these HTTP Request Headers are  [forwarded](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/forward-custom-headers.html):
 * `Authorization`
@@ -234,7 +235,7 @@ You may add or modify whitelisted headers, see the "Working with templates" chap
 
 > Internally, `dawson` uses a [Passthrough Parameter-Mapping Template](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html) to forward request parameters, headers and body to your function.
 
-### 3.2 Returning a value
+## 3.2 Returning a value
 
 A function can return:
 * a `string`, which will be returned as-is as the HTTP response;
@@ -244,7 +245,7 @@ A function can return:
 
 Currently, functions can not modify HTTP Response Headers.
 
-#### 3.2.1 Returning an HTTP redirect
+### 3.2.1 Returning an HTTP redirect
 
 To respond with an HTTP Redirect (with an HTTP Status equal to `307 Temporary Redirect`), you must return an Object with a `Location` property. Additionally, the `api.redirects` configuration property must also be set to `true`.
 
@@ -260,7 +261,7 @@ myRoute.api = {
 
 > Due to limitations in API Gateway, you cannot return any payload and you cannot mix redirecting and non-redirecting responses.
 
-#### 3.2.2 Returning an error response
+### 3.2.2 Returning an error response
 
 When a function fails and an error occurs, you can throw an `Error` or return a rejecting `Promise`.
 dawson hides all uncaught Errors and will not leak any information about it. The Client (either a browser or any other HTTP agent) will receive a generic `HTTP 500 Internal Server Error`.
@@ -357,7 +358,7 @@ index.api = {
 
 ---
 
-## 4. Function configuration
+# 4. Function configuration
 
 Each function exported by the `api.js` file **must** have an `api` property.  
 The `api` property is used to configure the function behaviour, as described below:
@@ -378,7 +379,7 @@ foo.api = {
 };
 ```
 
-### `path`
+## `path`
 **Required**: yes | **Type**: `string`|`boolean`
 **Use for**: Specifying an HTTP path 
 
@@ -388,23 +389,23 @@ If `false`, no API Gateway method will be deployed (see [Function Parameters](./
 
 >  Due to an API Gateway limitation, `/hello/{name}.html` is [**invalid**](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-mappings.html). `/hello/{name}/profile.html` and `/{foo}/bar/{baz}` are valid (technically, "*each path part must not contain curly braces, or must both begin and end with a curly brace*").  
 
-### `method`
+## `method`
 **Required**: no | **Type**: `string` | **Default**: `"GET"`  
 **Use for**: Specifying an HTTP Method 
 
-### `responseContentType`
+## `responseContentType`
 **Required**: no | **Type**: `string` | **Default**: `"text/html"`  
 **Use for**: Specifying a value for the `Content-type` HTTP Response Header
 
 The `Content-type` header to set in the HTTP Response. Valid values includes: `application/json`, `text/html`, `text/plain`, etc. When `application/json` is specified, you should return a JSON-serializable object, JSON.stringify will be called automatically. Custom values are also allowed. Binary data might be corrupted (until AWS Api Gateway will support setting Binary Responses via CloudFormation).
 
-### `authorizer`
+## `authorizer`
 **Required**: no | **Type**: `function` | **Default**: `undefined`  
 **Use for**: Specifying an API Gateway Custom Authorizer to attach to this function
 
 A function to use as [API Gateway Custom Authorizer](https://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) for this endpoint. The authorizer function must be exported from `api.js` as well and its `path` property must be set to `false`. Function's signature and return values matches the ones defined in the [related  documentation on AWS](https://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html).
 
-### `policyStatements`
+## `policyStatements`
 **Required**: no | **Type**: `list of maps` | **Default**: `[]`  
 **Use for**: Specifying AWS permissions for this function
 
@@ -434,7 +435,7 @@ A Statement that allows access to CloudWatch Logs is automatically added.
 }]
 ```
 
-### `redirects`
+## `redirects`
 **Required**: no | **Type**: `boolean` | **Default**: `false`  
 **Use for**: Settings wether a function is expected to return a `307 Temporary Redirect` or not
 
@@ -485,19 +486,19 @@ You must set at least the **`name`** field in your `package.json`; this `name` w
 
 Optionally, you can define a `dawson` property as an Object with the following properties:
 
-### `pre-deploy`
+## `pre-deploy`
 **Required**: no | **Type**: `string` | **Default**: `undefined`  
 **Use for**: Specifying a bash command to run before the deployment begins
 
 A shell command to execute before starting the deployment. If command exits with status <> 0, the deployment is aborted.
 
-### `post-deploy`
+## `post-deploy`
 **Required**: no | **Type**: `string` | **Default**: `undefined`  
 **Use for**: Specifying a bash command to run before the deployment begins
 
 A shell command to run after the deployment has been successfully completed.
 
-### `ignore`
+## `ignore`
 **Required**: no | **Type**: `Array<string>` | **Default**: `[]`  
 **Use for**: Specifying files to not include in the ZIP bundle which is uploaded to AWS Lambda
 
@@ -505,7 +506,7 @@ A list of partial paths to ignore when compiling, when zipping the bundle and wh
 Paths should begin with `*` unless they're absolute (see [zip man page](https://linux.die.net/man/1/zip)).
 **Do not** specify `node_modules` here, it is already ignored when needed.  
 
-### `cloudfrontRootOrigin`
+## `cloudfrontRootOrigin`
 **Required**: no | **Type**: `"api" | "assets"` | **Default**: `api`  
 **Use for**: Specifying wether the root ("/") path of your app serves the contents from the `assets/` folder or from the API
 
@@ -514,10 +515,14 @@ This option controls the [behaviour](https://docs.aws.amazon.com/AmazonCloudFron
   * if `"api"` (typically for *APIs* or *Server-Rendered pages*), all requests are forwarded to your APIs, except requests starting with `/assets` which are served using the S3 Assets Bucket contents.  
   When forwarding requests to the S3 Assets Bucket, the `/assets` prefix will not be stripped: you need to have an `assets` folder at top level in your bucket. At the opposite, when forwarding requests to your API, the `/prod` prefix will be stripped (because it references API Gateway's Stage).  
   On startup, the development server prints these mappings so you can check that you've properly configured everything.
- 
-* **route53** (object: string -> string, defaults to `{}`): an object which maps app stages to Route53 Hosted Zone IDs. If an Hosted Zone ID is specified, the DNS Record corresponding to the CloudFront Alias (CNAME) is created (as an `A ALIAS` to the CloudFront distribution). Needless to say, he Route53 Hosted Zone must be an Alias' ancestor or the deployment will fail.  
 
-### `cloudfront`
+## `route53`
+**Required**: no | **Type**: `Object<string:string|boolean>` | **Default**: `{}`  
+**Use for**: Specifying Route53 Zone IDs to link to your CloudFront Distributions
+
+An object which maps app stages to Route53 Hosted Zone IDs. If an Hosted Zone ID is specified, the DNS Record corresponding to the CloudFront Alias (CNAME) is created (as an `A ALIAS` to the CloudFront distribution). Needless to say, he Route53 Hosted Zone must be an Alias' ancestor or the deployment will fail.  
+
+## `cloudfront`
 **Required**: no | **Type**: `Object<string:string|boolean>` | **Default**: `{}`  
 **Use for**: Specifying wether to deploy a CloudFront distribution in front of your API (*recommended*) or not.
 
@@ -529,10 +534,9 @@ Keys are *stage names* (see *Working with Stages* above, `"default"` is the defa
   
 > If changing this setting will result in updating, creating or deleting a CloudFront Distribution, the deployment will take approximately 15-20 minutes.  
 
-> We choose to serve nly HTTPS is supported, and a TLS certificate might be automatically requested by dawson using AWS ACM. See below for details.
+> We choose to serve contents only via HTTPS. A TLS certificate might be automatically requested by dawson using AWS ACM. See the next section for details.
 
-
-### 5.1 SSL/TLS Certificates
+## 5.1 SSL/TLS Certificates
 
 If you specify a custom domain (Alias, CNAME) in the cloudfront property, the following behaviour will apply:
 
@@ -554,7 +558,7 @@ As we introduced above, the Template is a textual (JSON) representations of all 
 
 As you may know, each CloudFormation Template is composed by a `Resources` and an `Outputs` properties. Outputs contains a map to values that external Resources can access.
 
-### 6.1 Adding custom resources
+## 6.1 Adding custom resources
 Sooner or later, you'll probably need to add more Resources to your infrastructure, such as DynamoDB Tables, S3 Buckets, SQS Queues, SNS Topics, etc. dawson provides a method to add custom resources to the Template that will be deployed to AWS.
 
 Define and export a function named `customTemplateFragment` from the `api.js` file; this function takes two parameters and must return an Object, which dawson will merge its Resources on.
@@ -596,7 +600,7 @@ Please **do not hardcode Resource IDs** in your code. **They will change and wil
 > You can use `Fn::GetAtt`, `Fn::Sub`, `Ref` etc to reference other resources in this Template.
 
 
-### 6.2 Modifying dawson-managed resources
+## 6.2 Modifying dawson-managed resources
 You can modify every part of a Template, overriding dawson's configuration.  
 
 Define and export a function named `processCFTemplate` from the `api.js` file; this function takes the Template Object right before dawson deploys it and must return an updated Template Object.
