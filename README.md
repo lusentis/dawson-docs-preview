@@ -72,22 +72,22 @@ export AWS_REGION=...
 
 You write your app's code and then dawson takes care of building, packing, uploading the code to AWS and of creating the AWS infrastructure that your application needs to run.
 
-### installing
+### 1.1 installing
 you should install dawson using npm or yarn: `npm install -g dawson` or `yarn global add dawson`. You should then be able to run a `dawson --help` command.  
 You're kindly invited to keep dawson up-to-date, starting with `v1.0.0` we will never introduce backwards-incompatible changes between non-major versions, following strict [SemVer](http://semver.org).
 
-### package.json and entry point
+### 1.2 package.json and entry point
 dawson reads the contents of a file named `api.js` in your current working directory. You should write (or just `export`) your functions in this `api.js` file.  
 dawson uses the `name` field in the `package.json` file in your current working directory to determine the app name, which will be used as a prefix for many AWS Resources that are created automatically. Make sure you have correctly set the `name` field it's *not possible to change* it later.
 
-### the dawson CLI
+### 1.3 the dawson CLI
 dawson ships a few commands that you should use to manage your application, here's a brief overview. Up-to-date reference for commands and argumends may be accessed using `$ dawson --help`.
 `$ dawson deploy` creates or updates the whole infrastructure and deploys your application
 `$ dawson log -t -f <function>` pulls function's logs from AWS in real time
 `$ dawson describe` list all of the Resources that have been deployed
 `$ dawson dev` starts a **development server**
 
-### templates, *under the hood*
+### 1.4 templates, *under the hood*
 When you run the `$ dawson deploy` command, dawson reads your file's contents and constructs a (*JSON*) description of the AWS infrastructure that needs to be created (functions, API endpoints, etc...). Such description is called **Template**. The Template is then uploaded to AWS, which performs the actual deploy. AWS takes care of creating resources, calculating changes and to perform the actual deployment. 
 
 **The description will contain the following Resources:**
@@ -103,11 +103,11 @@ When you run the `$ dawson deploy` command, dawson reads your file's contents an
 > You can add more Resources as you need and fully customize even Resources that are managed by dawson.  
 Internally, dawson is building and deploying [CloudFormation Stack](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html).
 
-### working with *stage*s
+### 1.5 working with *stage*s
 You may want to have more than one deployment for your app, for example you might want to create separate *development* and *production* deployments: you can use the `--stage` parameter when running dawson (or set a `DAWSON_STAGE` environment variable) to tell dawson which stage to operate on. By default, dawson uses a stage named `"default"`.
 Stages are completely isolated one to each other and they may also have different configurations, including different domain names.
 
-### deployment speed
+### 1.6 deployment speed
 The *first deployment* will be very slow because many resources needs to be created (including a CloudFront distribution) and it will take anything between *15 to 45 minutes*. You can safely kill (Ctrl-C) the dawson command once it says "waiting for stack update to complete".
 Subsequent deploys will *usually take around 2-5 minutes* or more, depending on which Resources need to be created and updated.
 
@@ -234,7 +234,7 @@ You may add or modify whitelisted headers, see the "Working with templates" chap
 
 > Internally, `dawson` uses a [Passthrough Parameter-Mapping Template](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html) to forward request parameters, headers and body to your function.
 
-### 3.2 Return value
+### 3.2 Returning a value
 
 A function can return:
 * a `string`, which will be returned as-is as the HTTP response;
@@ -387,7 +387,6 @@ The path must be unique in your whole app. You may use path parameters placehold
 If `false`, no API Gateway method will be deployed (see [Function Parameters](./Function-Parameters) for details).  
 
 >  Due to an API Gateway limitation, `/hello/{name}.html` is [**invalid**](https://docs.aws.amazon.com/apigateway/latest/developerguide/getting-started-mappings.html). `/hello/{name}/profile.html` and `/{foo}/bar/{baz}` are valid (technically, "*each path part must not contain curly braces, or must both begin and end with a curly brace*").  
-  
 
 ### `method`
 **Required**: no | **Type**: `string` | **Default**: `"GET"`  
@@ -486,22 +485,51 @@ You must set at least the **`name`** field in your `package.json`; this `name` w
 
 Optionally, you can define a `dawson` property as an Object with the following properties:
 
-* **pre-deploy** (string): a command to execute before starting the deployment. If command exits with status <> 0, the deployment is aborted.
-* **post-deploy** (string): a command to run after the deployment has been successfully completed.
-* **ignore** (list of strings): a list of partial paths to ignore when compiling, when zipping the bundle and when watching files for changes. **Do not** specify `node_modules` here, it is already ignored as needed. Paths should be relative to the project root.
-* **route53** (object: string -> string, defaults to `{}`): an object which maps app stages to Route53 Hosted Zone IDs. If an Hosted Zone ID is specified, the DNS Record corresponding to the CloudFront Alias (CNAME) is created (as an `A ALIAS` to the CloudFront distribution). Needless to say, he Route53 Hosted Zone must be an Alias' ancestor or the deployment will fail.  
-* **cloudfrontRootOrigin** (either `"assets"` or `"api"`, defaults to `"api"`):  
-  This option controls the [behaviour](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesCacheBehavior) of the CloudFront distribution and the development server.
-  * if `"assets"` (typically for Single Page Apps), all requests are served using the S3 Assets Bucket contents, except requests starting with `/prod` which are forwarded to your APIs.
-  * if `"api"` (typically for APIs or Server-Rendered pages), all requests are forwarded to your APIs, except requests starting with `/assets` which are served using the S3 Assets Bucket contents.  
+### `pre-deploy`
+**Required**: no | **Type**: `string` | **Default**: `undefined`  
+**Use for**: Specifying a bash command to run before the deployment begins
+
+A shell command to execute before starting the deployment. If command exits with status <> 0, the deployment is aborted.
+
+### `post-deploy`
+**Required**: no | **Type**: `string` | **Default**: `undefined`  
+**Use for**: Specifying a bash command to run before the deployment begins
+
+A shell command to run after the deployment has been successfully completed.
+
+### `ignore`
+**Required**: no | **Type**: `Array<string>` | **Default**: `[]`  
+**Use for**: Specifying files to not include in the ZIP bundle which is uploaded to AWS Lambda
+
+A list of partial paths to ignore when compiling, when zipping the bundle and when watching files for changes.  
+Paths should begin with `*` unless they're absolute (see [zip man page](https://linux.die.net/man/1/zip)).
+**Do not** specify `node_modules` here, it is already ignored when needed.  
+
+### `cloudfrontRootOrigin`
+**Required**: no | **Type**: `"api" | "assets"` | **Default**: `api`  
+**Use for**: Specifying wether the root ("/") path of your app serves the contents from the `assets/` folder or from the API
+
+This option controls the [behaviour](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/distribution-web-values-specify.html#DownloadDistValuesCacheBehavior) of the CloudFront distribution and the development server.
+  * if `"assets"` (typically for *Single Page Apps*), all requests are served using the S3 Assets Bucket contents, except requests starting with `/prod` which are forwarded to your APIs.
+  * if `"api"` (typically for *APIs* or *Server-Rendered pages*), all requests are forwarded to your APIs, except requests starting with `/assets` which are served using the S3 Assets Bucket contents.  
   When forwarding requests to the S3 Assets Bucket, the `/assets` prefix will not be stripped: you need to have an `assets` folder at top level in your bucket. At the opposite, when forwarding requests to your API, the `/prod` prefix will be stripped (because it references API Gateway's Stage).  
   On startup, the development server prints these mappings so you can check that you've properly configured everything.
-* **cloudfront** (object: string -> string|boolean, defaults to `{}`): an object which maps app stages to domain names. Please keep in mind that if changing this setting will result in updating, creating or deleting a CloudFront Distribution, the deployment will take approximately 15-20 minutes.  
-  * When `false`, no CloudFront Distribution will be created for that stage.  
-  * When `"string"` (a valid domain name), a CloudFront Distribution will be created and `"string"` will be set as a custom domain name (or [Alias (CNAME)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)). The CNAME that you specify must be **globally unique in AWS**. If the CNAME specified here is already in use the deployment will fail. An SSL/TLS certificate might be requested for this domain, *see below for details*.
-  * When `true` (this is also the predefined behaviour for stages not specified here), a CloudFront Distribution will be created without any Alias (CNAME) and can be accessed using the usual https://d123456789.cloudfront.net URL.  
+ 
+* **route53** (object: string -> string, defaults to `{}`): an object which maps app stages to Route53 Hosted Zone IDs. If an Hosted Zone ID is specified, the DNS Record corresponding to the CloudFront Alias (CNAME) is created (as an `A ALIAS` to the CloudFront distribution). Needless to say, he Route53 Hosted Zone must be an Alias' ancestor or the deployment will fail.  
 
-> Keep in mind that only HTTPS is supported, and a TLS certificate might be automatically requested by dawson using AWS ACM. See below for details.
+### `cloudfront`
+**Required**: no | **Type**: `Object<string:string|boolean>` | **Default**: `{}`  
+**Use for**: Specifying wether to deploy a CloudFront distribution in front of your API (*recommended*) or not.
+
+An Object which maps app stages to optional domain names.  
+Keys are *stage names* (see *Working with Stages* above, `"default"` is the default stage if you do not specify `--stage`).
+  * When the value is `false`, no CloudFront Distribution will be created for that stage.  
+  * When the value is `true` (which is the default behaviour for stages not specified in this Object), a CloudFront Distribution will be created without any Alias (CNAME) and can be accessed using the usual https://dNNNNNNNNN.cloudfront.net URL.  
+  * When the value is a valid domain name (`"abc.string.com"`), a CloudFront Distribution will be created and `"abc.string.com"` will be set as a Custom Domain Name (aka CNAME, or [Alias (CNAME)](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)). The CNAME that you specify must be **globally unique in AWS**. If the CNAME specified here is already in use the deployment will fail. *An SSL/TLS certificate might be requested for this domain, see below for details.*
+  
+> If changing this setting will result in updating, creating or deleting a CloudFront Distribution, the deployment will take approximately 15-20 minutes.  
+
+> We choose to serve nly HTTPS is supported, and a TLS certificate might be automatically requested by dawson using AWS ACM. See below for details.
 
 
 ### 5.1 SSL/TLS Certificates
