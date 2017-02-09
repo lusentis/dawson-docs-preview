@@ -1,4 +1,3 @@
-
 dawson documentation
 ====================
 
@@ -31,6 +30,49 @@ $ export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_REGION=...
 $ dawson deploy
 ```
 
+<!-- toc -->
+
+- [0. Working with AWS](#0-working-with-aws)
+  * [0.1 obtaining AWS Credentials: short version](#01-obtaining-aws-credentials-short-version)
+  * [0.2 obtaining AWS Credentials: long version for AWS beginners](#02-obtaining-aws-credentials-long-version-for-aws-beginners)
+- [1. Getting to know dawson](#1-getting-to-know-dawson)
+  * [1.1 installing](#11-installing)
+  * [1.2 package.json and entry point](#12-packagejson-and-entry-point)
+  * [1.3 the dawson CLI](#13-the-dawson-cli)
+  * [1.4 templates, *under the hood*](#14-templates-under-the-hood)
+  * [1.5 working with *stage*s](#15-working-with-stages)
+  * [1.6 deployment speed](#16-deployment-speed)
+- [2. Working with functions](#2-working-with-functions)
+- [3. Function programming model](#3-function-programming-model)
+  * [3.1 Parameters](#31-parameters)
+    + [3.1.1 Accessing Template Outputs and Custom Resources](#311-accessing-template-outputs-and-custom-resources)
+    + [3.1.2 Supported HTTP request headers](#312-supported-http-request-headers)
+  * [3.2 Returning a value](#32-returning-a-value)
+    + [3.2.1 Returning an HTTP redirect](#321-returning-an-http-redirect)
+    + [3.2.2 Returning an error response](#322-returning-an-error-response)
+  * [3.3 Example functions](#33-example-functions)
+- [4. Function configuration](#4-function-configuration)
+  * [`path`](#path)
+  * [`method`](#method)
+  * [`responseContentType`](#responsecontenttype)
+  * [`authorizer`](#authorizer)
+  * [`policyStatements`](#policystatements)
+  * [`redirects`](#redirects)
+- [5. Application configuration](#5-application-configuration)
+  * [`pre-deploy`](#pre-deploy)
+  * [`post-deploy`](#post-deploy)
+  * [`ignore`](#ignore)
+  * [`cloudfrontRootOrigin`](#cloudfrontrootorigin)
+  * [`route53`](#route53)
+  * [`cloudfront`](#cloudfront)
+  * [5.1 SSL/TLS Certificates](#51-ssltls-certificates)
+- [6. Working with the Template](#6-working-with-the-template)
+  * [6.1 Adding custom resources](#61-adding-custom-resources)
+  * [6.2 Modifying dawson-managed resources](#62-modifying-dawson-managed-resources)
+- [7. Working with the Development Server](#7-working-with-the-development-server)
+
+<!-- tocstop -->
+
 # 0. Working with AWS
 
 dawson requires Amazon Web Services credentials to operate. dawson needs the following environment variables:
@@ -41,12 +83,12 @@ dawson requires Amazon Web Services credentials to operate. dawson needs the fol
 
 As a safety measure, dawson uses a mechanism to prevent accidental deletion or replacement of *some* resources, which could result in data loss, DNS changes etc, unless the --danger-delete-resources CLI option is specified. Trying to perform some operations, such as deleting S3 Buckets, REST APIs, DynamoDB Tables, CloudFront Distributions will result in an error unless this flag is specified
 
-# obtaining AWS Credentials: short version
+## 0.1 obtaining AWS Credentials: short version
 Create an IAM user with `AdministratorAccess` permissions (be sure to create an Access Key), then create a profile with the given credentials (or export them as `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION`).  
 
 > Since we use the `aws-sdk-js`, any other method of setting credentials should work and can be used (e.g. EC2 Instance Role).
 
-# obtaining AWS Credentials: long version for AWS beginners
+## 0.2 obtaining AWS Credentials: long version for AWS beginners
 
 1. create an Amazon Web Services Account or login into an existing account
 2. from the top menu, choose Services and find *Identity & Access Management* (short: IAM)
